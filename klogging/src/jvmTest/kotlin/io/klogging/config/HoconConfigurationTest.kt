@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,13 +23,16 @@ import io.klogging.Level
 import io.klogging.Level.DEBUG
 import io.klogging.Level.FATAL
 import io.klogging.Level.INFO
+import io.klogging.context.Context
 import io.klogging.genString
 import io.klogging.internal.KloggingEngine
 import io.klogging.rendering.RENDER_CLEF
 import io.klogging.rendering.RENDER_SIMPLE
 import io.klogging.sending.STDOUT
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.extensions.system.withEnvironment
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.maps.shouldContainExactly
 import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -84,6 +87,27 @@ internal class HoconConfigurationTest : DescribeSpec({
                 val config = HoconConfiguration.configure(hoconConfig)
 
                 config?.apply { sinks shouldHaveSize 1 }
+            }
+        }
+        describe("setting base context items") {
+            afterEach { Context.clearBaseContext() }
+            it("adds any items to the base context") {
+                val baseContextHoconConfig = """{baseContext:{app:testApp,buildNumber:"1.0.1"}}"""
+                HoconConfiguration.configure(baseContextHoconConfig)
+
+                KloggingEngine.baseContextItems.shouldContainExactly(
+                    mapOf(
+                        "app" to "testApp",
+                        "buildNumber" to "1.0.1"
+                    )
+                )
+            }
+            it("evaluates environment variables in context item values") {
+                withEnvironment("BUILD_NUMBER" to "2.0.22-ab8c14d") {
+                    HoconConfiguration.configure("""{baseContext:{buildNumber:"${'$'}{BUILD_NUMBER}"}}""")
+
+                    KloggingEngine.baseContextItems.shouldContainExactly(mapOf("buildNumber" to "2.0.22-ab8c14d"))
+                }
             }
         }
         describe("simple, using built-in, named renderers and senders") {
@@ -165,6 +189,41 @@ internal class HoconConfigurationTest : DescribeSpec({
                         }
                     }
                 }
+            }
+        }
+        describe("config with substitution from environment variable") {
+            it("picks a value from environment variable") {
+                withEnvironment("ENV_VAR_SUBSTITUTION_TEST", "RENDER_ANSI") {
+                    HoconConfiguration.readConfig(
+                        """
+                            sinks {
+                              stdout {
+                                renderWith = RENDER_CLEF
+                                renderWith = ${'$'}{ENV_VAR_SUBSTITUTION_TEST}
+                                sendTo = STDOUT
+                              }
+                            }
+                        """.trimIndent()
+                    )
+                }.shouldNotBeNull()
+                    .sinks["stdout"].shouldNotBeNull()
+                    .renderWith shouldBe "RENDER_ANSI"
+            }
+            it("ignores a non-existent environment variable") {
+                HoconConfiguration.readConfig(
+                    """
+                        sinks {
+                          stdout {
+                            renderWith = RENDER_CLEF
+                            renderWith = ${'$'}{?N0N_EXISTENT_ENV_VAR}
+                            sendTo = STDOUT
+                          }
+                        }
+                    """.trimIndent()
+                )
+                    .shouldNotBeNull()
+                    .sinks["stdout"].shouldNotBeNull()
+                    .renderWith shouldBe "RENDER_CLEF"
             }
         }
         describe("Klogging minimum log level") {

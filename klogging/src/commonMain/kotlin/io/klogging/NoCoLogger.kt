@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -71,6 +71,27 @@ public interface NoCoLogger : BaseLogger {
         } else {
             emitEvent(level, null, e(template, *values))
         }
+
+    /**
+     * Log an event with a message and an explicit set of items.
+     *
+     * @param level level at which to log
+     * @param message message to include in the log event
+     * @param items items to include in the log event
+     */
+    public fun log(level: Level, message: String, items: EventItems): Unit =
+        emitEvent(level, null, message, items)
+
+    /**
+     * Log an event with an associated throwable, a message and an explicit set of items.
+     *
+     * @param level level at which to log
+     * @param throwable throwable object associated with this log event
+     * @param message message to include in the log event
+     * @param items items to include in the log event
+     */
+    public fun log(level: Level, throwable: Throwable, message: String, items: EventItems): Unit =
+        emitEvent(level, throwable, message, items)
 
     public fun trace(event: Any?): Unit = log(TRACE, event)
     public fun debug(event: Any?): Unit = log(DEBUG, event)
@@ -143,6 +164,31 @@ public interface NoCoLogger : BaseLogger {
 
     public fun fatal(throwable: Throwable, event: NoCoLogger.() -> Any?): Unit =
         log(FATAL, throwable, event)
+
+    public fun trace(message: String, items: EventItems): Unit = log(TRACE, message, items)
+    public fun debug(message: String, items: EventItems): Unit = log(DEBUG, message, items)
+    public fun info(message: String, items: EventItems): Unit = log(INFO, message, items)
+    public fun warn(message: String, items: EventItems): Unit = log(WARN, message, items)
+    public fun error(message: String, items: EventItems): Unit = log(ERROR, message, items)
+    public fun fatal(message: String, items: EventItems): Unit = log(FATAL, message, items)
+
+    public fun trace(message: String, throwable: Throwable, items: EventItems): Unit =
+        log(TRACE, throwable, message, items)
+
+    public fun debug(message: String, throwable: Throwable, items: EventItems): Unit =
+        log(DEBUG, throwable, message, items)
+
+    public fun info(message: String, throwable: Throwable, items: EventItems): Unit =
+        log(INFO, throwable, message, items)
+
+    public fun warn(message: String, throwable: Throwable, items: EventItems): Unit =
+        log(WARN, throwable, message, items)
+
+    public fun error(message: String, throwable: Throwable, items: EventItems): Unit =
+        log(ERROR, throwable, message, items)
+
+    public fun fatal(message: String, throwable: Throwable, items: EventItems): Unit =
+        log(FATAL, throwable, message, items)
 
     /**
      * Evaluates a message template with the supplied values, returning [LogEvent].

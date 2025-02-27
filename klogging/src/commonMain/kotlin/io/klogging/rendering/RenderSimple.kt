@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@
 
 package io.klogging.rendering
 
-import io.klogging.events.LogEvent
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -39,13 +38,10 @@ public val Instant.localString: String
  *
  * If there is a stack trace it is on second and following lines.
  */
-public val RENDER_SIMPLE: RenderString = { e: LogEvent ->
-    val message = "${e.timestamp.localString} ${e.level} [${e.context}] ${e.logger} : ${e.evalTemplate()}"
-    val maybeItems = if (e.items.isNotEmpty()) " : ${e.items}" else ""
-    val maybeStackTrace = if (e.stackTrace != null) "\n${e.stackTrace}" else ""
+public val RENDER_SIMPLE: RenderString = RenderString { event ->
+    val message =
+        "${event.timestamp.localString} ${event.level} [${event.context}] ${event.logger} : ${event.evalTemplate()}"
+    val maybeItems = if (event.items.isNotEmpty()) " : ${event.items}" else ""
+    val maybeStackTrace = if (event.stackTrace != null) "\n${event.stackTrace}" else ""
     message + maybeItems + maybeStackTrace
 }
-
-public fun LogEvent.evalTemplate(): String = items.entries
-    .filter { entry -> entry.value != null }
-    .fold(message) { message, (key, value) -> message.replace("{$key}", value.toString()) }

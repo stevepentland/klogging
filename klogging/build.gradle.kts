@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,8 @@
 
 @file:Suppress("UNUSED_VARIABLE")
 
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
     id("klogging-kotlin")
     id("klogging-spotless")
@@ -26,22 +28,45 @@ plugins {
     alias(libs.plugins.serialisation)
     alias(libs.plugins.binaryCompatibilityValidator)
     alias(libs.plugins.testLogger)
-}
+    alias(libs.plugins.kover)
 
-repositories {
-    mavenCentral()
+    alias(libs.plugins.android.library)
 }
 
 kotlin {
-    js(IR) {
+    js {
+        browser()
         nodejs()
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        nodejs()
+    }
+
+    jvm() {
+    }
+
+    androidTarget {
+        publishLibraryVariants("release", "debug")
+    }
+
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64(),
+    ).forEach {
+        it.binaries.framework {
+            isStatic = true
+        }
     }
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(libs.kotlin.coroutines)
-                implementation(libs.kotlin.datetime)
+                api(libs.kotlin.coroutines)
+                api(libs.kotlin.datetime)
                 implementation(libs.kotlin.serialisation.json)
                 implementation(libs.kotlin.atomicfu)
             }
@@ -56,6 +81,7 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(libs.kotest.junit)
+                implementation(libs.kotest.json)
                 implementation(libs.kotest.datatest)
                 implementation(libs.kotest.xml)
                 implementation(libs.kotest.property)
@@ -64,6 +90,9 @@ kotlin {
         }
         val jsMain by getting
         val jsTest by getting
+        val wasmJsMain by getting
+        val wasmJsTest by getting
+        val androidMain by getting
     }
 }
 
@@ -81,4 +110,13 @@ testlogger {
     showPassed = false
     showSkipped = true
     showFailed = true
+}
+
+android {
+    namespace = "io.klogging"
+    compileSdk = 34
+
+    defaultConfig {
+        minSdk = 21
+    }
 }

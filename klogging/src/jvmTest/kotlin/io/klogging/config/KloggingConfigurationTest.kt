@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,9 +23,11 @@ import io.klogging.Level.FATAL
 import io.klogging.Level.INFO
 import io.klogging.Level.NONE
 import io.klogging.Level.WARN
+import io.klogging.fixturePath
 import io.klogging.genLevel
 import io.klogging.genLoggerName
 import io.klogging.internal.KloggingEngine
+import io.klogging.rendering.RENDER_ANSI
 import io.klogging.rendering.RENDER_CLEF
 import io.klogging.rendering.RENDER_SIMPLE
 import io.klogging.sending.STDERR
@@ -67,7 +69,7 @@ internal class KloggingConfigurationTest : DescribeSpec({
                     sinkConfigs() shouldContain ("console" to STDOUT_SIMPLE)
                     configs() shouldHaveSize 1
                     with(configs().first()) {
-                        nameMatcher shouldBe MATCH_ALL
+                        nameMatcher shouldBe matchAll
                         ranges shouldHaveSize 1
                         with(ranges.first()) {
                             sinkNames shouldHaveSize 1
@@ -83,7 +85,7 @@ internal class KloggingConfigurationTest : DescribeSpec({
                     // Dispatch to standout error stream with simple message rendering.
                     sink("stderr", RENDER_SIMPLE, STDERR)
                     // Dispatch to a Seq server with CLEF rendering by default.
-                    sink("seq", seq(server = "http://localhost:5341"))
+                    sink("seq", seq("http://localhost:5341"))
                     logging {
                         // Log everything from `com.example` base.
                         fromLoggerBase("com.example")
@@ -241,6 +243,40 @@ internal class KloggingConfigurationTest : DescribeSpec({
 
                 config.append(KloggingConfiguration().apply { kloggingMinLogLevel = DEBUG })
                 config.kloggingMinLogLevel shouldBe DEBUG
+            }
+        }
+        describe("with `loggingConfigPath` value") {
+            it("combines file and DSL configuration") {
+                val configFilePath = fixturePath("klogging-test.json")
+                loggingConfiguration {
+                    loggingConfigPath(configFilePath)
+                    sink("stdout", RENDER_ANSI, STDOUT)
+                    logging {
+                        fromLoggerBase("io.klogging.context.Context")
+                        toMaxLevel(INFO) {
+                            toSink("stdout")
+                        }
+                    }
+                }
+
+                with(KloggingEngine.sinks()) {
+                    shouldHaveSize(2)
+                    keys shouldContainExactly setOf("moon", "stdout")
+                }
+            }
+            it("ignores if file is not found") {
+                loggingConfiguration {
+                    loggingConfigPath("/temp/missing-config.json")
+                    sink("stdout", RENDER_ANSI, STDOUT)
+                    logging {
+                        fromLoggerBase("io.klogging.context.Context")
+                        toMaxLevel(INFO) {
+                            toSink("stdout")
+                        }
+                    }
+                }
+
+                KloggingEngine.sinks() shouldHaveSize 1
             }
         }
     }

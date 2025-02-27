@@ -1,4 +1,6 @@
+.kotlin
 .gradle
+.kotlin
 build
 !buildSrc/src/main/kotlin/io/klogging/build
 .idea

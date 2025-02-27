@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,18 +23,28 @@ import io.klogging.Level.ERROR
 import io.klogging.Level.FATAL
 import io.klogging.Level.INFO
 import io.klogging.Level.TRACE
+import io.klogging.context.Context
+import io.klogging.events.LogEvent
+import io.klogging.genMessage
 import io.klogging.genString
 import io.klogging.internal.KloggingEngine
+import io.klogging.logEvent
+import io.klogging.randomString
 import io.klogging.rendering.RENDER_CLEF
 import io.klogging.rendering.RENDER_SIMPLE
+import io.klogging.rendering.RenderString
 import io.klogging.sending.STDOUT
+import io.klogging.sending.SendString
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.extensions.system.withEnvironment
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.maps.shouldContainExactly
 import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.arbitrary.next
+import io.kotest.property.checkAll
 import kotlinx.serialization.json.Json
 
 internal class JsonConfigurationTest : DescribeSpec({
@@ -50,6 +60,27 @@ internal class JsonConfigurationTest : DescribeSpec({
                 config?.apply {
                     sinks shouldHaveSize 0
                     configs shouldHaveSize 0
+                }
+            }
+        }
+        describe("setting base context items") {
+            afterEach { Context.clearBaseContext() }
+            it("adds any items to the base context") {
+                val baseContextJsonConfig = """{"baseContext":{"app":"testApp","buildNumber":"1.0.1"}}"""
+                JsonConfiguration.configure(baseContextJsonConfig)
+
+                KloggingEngine.baseContextItems.shouldContainExactly(
+                    mapOf(
+                        "app" to "testApp",
+                        "buildNumber" to "1.0.1"
+                    )
+                )
+            }
+            it("evaluates environment variables in context item values") {
+                withEnvironment("BUILD_NUMBER" to "2.0.22-f78ca4d") {
+                    JsonConfiguration.configure("""{baseContext:{buildNumber:"${'$'}{BUILD_NUMBER}"}}""")
+
+                    KloggingEngine.baseContextItems.shouldContainExactly(mapOf("buildNumber" to "2.0.22-f78ca4d"))
                 }
             }
         }
@@ -249,6 +280,41 @@ internal class JsonConfigurationTest : DescribeSpec({
 
                     sinkConfig shouldBe null
                 }
+                it("returns configuration with the name of a `RenderString` class on the classpath") {
+                    val renderStringClassName = RenderMessageOnly::class.java.name
+                    val renderStringConfig = Json.decodeFromString<FileSinkConfiguration>(
+                        """{
+                            "renderWith": "$renderStringClassName",
+                            "sendTo": "STDOUT"
+                            }
+                        """.trimIndent(),
+                    ).toSinkConfiguration()
+
+                    renderStringConfig?.renderer.let { renderer ->
+                        renderer.shouldNotBeNull()
+                        checkAll(genMessage) { message ->
+                            renderer(logEvent(message = message)) shouldBe message
+                        }
+                    }
+                }
+                it("returns configuration with the name of a `Sender` class on the classpath") {
+                    val senderClassName = StringSavingSender::class.java.name
+                    val senderConfig = Json.decodeFromString<FileSinkConfiguration>(
+                        """{
+                            "renderWith": "RENDER_SIMPLE",
+                            "sendTo": "$senderClassName"
+                        }
+                        """.trimIndent(),
+                    ).toSinkConfiguration()
+
+                    senderConfig?.stringSender.let { sender ->
+                        sender.shouldNotBeNull()
+                        val eventString = randomString()
+                        savedString = ""
+                        sender(eventString)
+                        savedString shouldBe eventString
+                    }
+                }
             }
             describe("using `seqServer` key") {
                 it("returns a Seq configuration with RENDER_CLEF if only that key is present") {
@@ -287,3 +353,15 @@ internal class JsonConfigurationTest : DescribeSpec({
         }
     }
 })
+
+class RenderMessageOnly : RenderString {
+    override operator fun invoke(event: LogEvent): String = event.message
+}
+
+var savedString: String = ""
+
+class StringSavingSender : SendString {
+    override fun invoke(eventString: String) {
+        savedString = eventString
+    }
+}

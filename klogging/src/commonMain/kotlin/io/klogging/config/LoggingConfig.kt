@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,8 @@ import io.klogging.Level.TRACE
 /** Function type for matching a logger name. */
 internal typealias Matcher = (String) -> Boolean
 
-internal val MATCH_ALL: Matcher = { true }
+/** Matcher that always returns `true`. */
+internal val matchAll: Matcher = { true }
 
 /**
  * Logging configuration with a logger name match and a list of level ranges that
@@ -33,10 +34,14 @@ internal val MATCH_ALL: Matcher = { true }
  */
 public class LoggingConfig {
 
+    /** Flag signifying that searching for  should stop after the first match. */
     internal var stopOnMatch: Boolean = false
-    internal val ranges = mutableListOf<LevelRange>()
 
-    internal var nameMatcher: Matcher = MATCH_ALL
+    /** List of [LevelRange]s in this configuration. */
+    internal val ranges: MutableList<LevelRange> = mutableListOf()
+
+    /** Matcher in this configuration. */
+    internal var nameMatcher: Matcher = matchAll
 
     /**
      * DSL function to specify that logger names should match from the specified base name.

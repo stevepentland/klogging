@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,11 @@
 
 package io.klogging.context
 
-import io.klogging.config.Context
 import io.klogging.logger
 import io.klogging.savedEvents
-import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.maps.shouldContainExactly
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.seconds
 
 class BaseContextItemsTest : DescribeSpec({
     afterTest {
@@ -38,9 +35,7 @@ class BaseContextItemsTest : DescribeSpec({
 
             logger.info("Message from {name}", "Test")
 
-            eventually(1.seconds) {
-                saved.first().items shouldContainExactly mapOf("name" to "Test")
-            }
+            saved.first().items shouldContainExactly mapOf("name" to "Test")
         }
         it("includes any base context items") {
             val logger = logger<BaseContextItemsTest>()
@@ -49,12 +44,10 @@ class BaseContextItemsTest : DescribeSpec({
 
             logger.info("Message from {name}", "Test")
 
-            eventually(1.seconds) {
-                saved.first().items shouldContainExactly mapOf(
-                    "name" to "Test",
-                    "base" to "value",
-                )
-            }
+            saved.first().items shouldContainExactly mapOf(
+                "name" to "Test",
+                "base" to "value",
+            )
         }
         it("combines base context and log context items") {
             val logger = logger<BaseContextItemsTest>()
@@ -65,13 +58,11 @@ class BaseContextItemsTest : DescribeSpec({
                 logger.info("Message from {name}", "Test")
             }
 
-            eventually(1.seconds) {
-                saved.first().items shouldContainExactly mapOf(
-                    "name" to "Test",
-                    "base" to "base",
-                    "log" to "log",
-                )
-            }
+            saved.first().items shouldContainExactly mapOf(
+                "name" to "Test",
+                "base" to "base",
+                "log" to "log",
+            )
         }
     }
 })

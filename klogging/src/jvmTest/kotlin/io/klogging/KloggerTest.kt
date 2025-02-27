@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import io.klogging.Level.INFO
 import io.klogging.Level.NONE
 import io.klogging.Level.TRACE
 import io.klogging.Level.WARN
+import io.klogging.events.EventItems
 import io.klogging.events.LogEvent
 import io.klogging.templating.templateItems
 import io.kotest.assertions.fail
@@ -205,12 +206,13 @@ internal class KloggerTest : DescribeSpec({
 
 private class TestLogger(private val minLevel: Level = TRACE) : Klogger {
     override val name: String = genLoggerName.next()
+    override val loggerContextItems: EventItems = mapOf()
 
     var thrower: Throwable? = null
     var logged: Any? = null
 
     override fun minLevel() = minLevel
-    override suspend fun emitEvent(level: Level, throwable: Throwable?, event: Any?) {
+    override suspend fun emitEvent(level: Level, throwable: Throwable?, event: Any?, items: EventItems) {
         thrower = throwable
         logged = event
     }

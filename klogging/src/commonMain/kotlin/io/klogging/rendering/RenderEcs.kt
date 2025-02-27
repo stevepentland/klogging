@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,21 +38,21 @@ import io.klogging.events.LogEvent
  * - `context` (if present) -> `context` in `labels` object
  * - `items` (if present) -> `items` (object)
  */
-public val RENDER_ECS: RenderString = { e: LogEvent ->
+public val RENDER_ECS: RenderString = RenderString { event ->
     val eventMap: MutableMap<String, Any?> = mutableMapOf(
-        "@timestamp" to e.timestamp,
-        "host.name" to e.host,
-        "log.logger" to e.logger,
-        "log.level" to e.level.name,
-        "message" to e.evalTemplate(),
-        "error.stack_trace" to e.stackTrace,
-        "error.message" to e.stackTrace?.let { e.evalTemplate() },
+        "@timestamp" to event.timestamp,
+        "host.name" to event.host,
+        "log.logger" to event.logger,
+        "log.level" to event.level.name,
+        "message" to event.evalTemplate(),
+        "error.stack_trace" to event.stackTrace,
+        "error.message" to event.stackTrace?.let { event.evalTemplate() },
     )
-    if (e.context != null) {
-        eventMap += "labels" to mapOf("context" to e.context)
+    if (event.context != null) {
+        eventMap += "labels" to mapOf("context" to event.context)
     }
-    if (e.items.isNotEmpty()) {
-        eventMap += "items" to e.items
+    if (event.items.isNotEmpty()) {
+        eventMap += "items" to event.items.destructured
     }
 
     serializeMap(eventMap.filterValues { it != null })

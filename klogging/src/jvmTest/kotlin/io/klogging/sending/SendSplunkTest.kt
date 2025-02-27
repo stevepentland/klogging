@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,45 +18,20 @@
 
 package io.klogging.sending
 
-import io.klogging.Level.INFO
-import io.klogging.events.LogEvent
 import io.kotest.core.spec.style.DescribeSpec
-import io.kotest.matchers.shouldBe
-import kotlinx.datetime.Instant
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
+import java.util.UUID
 
 class SendSplunkTest : DescribeSpec({
-    describe("`splunkEvent()` function") {
-        val ts = Instant.fromEpochSeconds(1632804634, 266123000)
-        val event = LogEvent(
-            "id",
-            ts,
-            "local",
-            "SendSplunkTest",
-            "test-context",
-            INFO,
-            message = "This is a message",
-            items = mapOf("colour" to "green"),
-        )
-        val endpoint = SplunkEndpoint(
-            "https://localhost:8088",
-            "TOKEN",
-            "logging-index",
-            "logging-source",
-            "false",
-        )
-
-        splunkEvent(endpoint, event) shouldBe """{
-            |"time":1632804634.266123000,
-            |"index":"logging-index",
-            |"sourcetype":"logging-source",
-            |"host":"local",
-            |"event":{
-            |"logger":"SendSplunkTest",
-            |"level":"INFO",
-            |"context":"test-context",
-            |"message":"This is a message",
-            |"colour":"green"
-            |}}
-        """.trimMargin().replace("\n", "")
+    describe("`SplunkEndpoint`") {
+        it("`toString()` masks `hecToken` values with ******") {
+            val token = UUID.randomUUID().toString()
+            val endpoint = SplunkEndpoint("https://localhost:8088", token)
+            with(endpoint.toString()) {
+                shouldNotContain(token)
+                shouldContain("********")
+            }
+        }
     }
 })

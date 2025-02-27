@@ -1,23 +1,26 @@
 [versions]
-atomicfu = "0.21.0"
-binary-compatibility-validator = "0.13.2"
-dokka = "1.8.20"
+atomicfu = "0.27.0"
+binary-compatibility-validator = "0.17.0"
+dokka = "2.0.0"
+hexagon = { strictly = "3.4.7" }
 html-reporter = "0.7.1"
-klogging = "0.4.22"
-kotlin = "1.9.0"
-kotest = "5.6.2"
-kotlin-coroutines = "1.7.3"
-kotlin-datetime = "0.4.0"
-kotlin-serialisation = "1.5.1"
-reckon = "0.18.0"
-slf4j = "2.0.7"
-spotless = "6.20.0"
+kotlin = "2.1.10"
+kotest = "5.9.1"
+kover = "0.9.1"
+kotlin-coroutines = "1.10.1"
+kotlin-datetime = "0.6.2"
+kotlin-serialisation = "1.8.0"
+reckon = "0.19.1"
+slf4j = "2.0.17"
+spotless = "7.0.2"
 test-logger = "3.2.0"
+android-library = { strictly = "[8.7, 8.8[" }
 
 [libraries]
+hexagon-core = { module = "com.hexagonkt:core", version.ref = "hexagon" }
 html-reporter = { module = "com.michaelstrasser:kotest-html-reporter", version.ref = "html-reporter" }
-klogging = { module = "io.klogging:klogging-jvm", version.ref = "klogging" }
 kotest-datatest = { module = "io.kotest:kotest-framework-datatest", version.ref = "kotest" }
+kotest-json = { module = "io.kotest:kotest-assertions-json", version.ref = "kotest" }
 kotest-junit = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 kotest-xml = { module = "io.kotest:kotest-extensions-junitxml-jvm", version.ref = "kotest" }
@@ -38,5 +41,7 @@ testlogger-gradle-plugin = { module = "com.adarshr:gradle-test-logger-plugin", v
 [plugins]
 binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binary-compatibility-validator" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 serialisation = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 testLogger = { id = "com.adarshr.test-logger", version.ref = "test-logger" }
+android-library = { id = "com.android.library", version.ref = "android-library" }

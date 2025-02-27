@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,37 +20,24 @@ package io.klogging.sending
 
 import io.klogging.internal.trace
 import io.klogging.internal.warn
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-
-/**
- * Send CLEF event strings to a Seq server on the JVM.
- *
- * @param server URL of the Seq server
- *
- * @return a [SendString] suspend function that sends each event string in a separate
- *         coroutine using the IO coroutine dispatcher.
- */
-internal actual fun seqServer(server: String): SendString = { eventString ->
-    coroutineScope {
-        launch(Dispatchers.IO) {
-            sendToSeq(server, eventString)
-        }
-    }
-}
+import javax.net.ssl.HttpsURLConnection
 
 /**
  * Send a CLEF event string to a Seq server.
  *
- * @param serverUrl URL of the Seq server
+ * @param url URL of the Seq server
  * @param eventString one or more CLEF-formatted, newline-separated log event(s)
  */
-private fun sendToSeq(serverUrl: String, eventString: String) {
-    val conn = seqConnection(serverUrl)
+internal actual fun sendToSeq(
+    url: String,
+    apiKey: String?,
+    checkCertificate: Boolean,
+    eventString: String,
+) {
+    val conn = seqConnection(url, apiKey, checkCertificate)
     try {
         trace("Seq", "Sending events to Seq in context ${Thread.currentThread().name}")
         conn.outputStream.use { it.write(eventString.toByteArray()) }
@@ -64,10 +51,18 @@ private fun sendToSeq(serverUrl: String, eventString: String) {
 }
 
 /** Construct an HTTP connection to the Seq server. */
-private fun seqConnection(serverUrl: String): HttpURLConnection {
-    val conn = URL("$serverUrl/api/events/raw").openConnection() as HttpURLConnection
+private fun seqConnection(serverUrl: String, apiKey: String?, checkCertificate: Boolean): HttpURLConnection {
+    val url = URL("$serverUrl/api/events/raw")
+    val conn = if (serverUrl.startsWith("https://")) {
+        (url.openConnection() as HttpsURLConnection).also {
+            if (!checkCertificate) Certificates.relaxHostChecking(it)
+        }
+    } else {
+        url.openConnection() as HttpURLConnection
+    }
     conn.requestMethod = "POST"
     conn.setRequestProperty("Content-Type", "application/vnd.serilog.clef")
+    if (apiKey != null) conn.setRequestProperty("X-Seq-ApiKey", apiKey)
     conn.doOutput = true
     return conn
 }

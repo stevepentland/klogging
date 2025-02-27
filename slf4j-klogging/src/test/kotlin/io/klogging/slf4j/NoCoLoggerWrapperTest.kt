@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,8 @@ import io.klogging.Level.INFO
 import io.klogging.Level.NONE
 import io.klogging.Level.TRACE
 import io.klogging.Level.WARN
+import io.klogging.logger
+import io.klogging.noCoLogger
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.collections.shouldHaveSize
@@ -36,6 +38,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import kotlin.random.Random
 
+@Suppress("TOO_MANY_LINES_IN_LAMBDA", "PARAMETER_NAME_IN_OUTER_LAMBDA")
 class NoCoLoggerWrapperTest : DescribeSpec({
     describe("NoCoLoggerWrapper") {
 
@@ -43,7 +46,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
             it("`TRACE`") {
                 val saved = savedEvents()
                 LoggerFactory.getLogger(randomString()).trace(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe TRACE
@@ -51,7 +53,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
             it("`DEBUG`") {
                 val saved = savedEvents()
                 LoggerFactory.getLogger(randomString()).trace(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe TRACE
@@ -59,7 +60,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
             it("`INFO`") {
                 val saved = savedEvents()
                 LoggerFactory.getLogger(randomString()).info(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe INFO
@@ -67,7 +67,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
             it("`WARN`") {
                 val saved = savedEvents()
                 LoggerFactory.getLogger(randomString()).warn(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe WARN
@@ -75,7 +74,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
             it("`ERROR`") {
                 val saved = savedEvents()
                 LoggerFactory.getLogger(randomString()).error(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe ERROR
@@ -87,7 +85,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val saved = savedEvents(minLevel = DEBUG)
                 LoggerFactory.getLogger(randomString()).trace(randomString())
                 LoggerFactory.getLogger(randomString()).debug(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe DEBUG
@@ -96,7 +93,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val saved = savedEvents(minLevel = INFO)
                 LoggerFactory.getLogger(randomString()).debug(randomString())
                 LoggerFactory.getLogger(randomString()).info(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe INFO
@@ -105,7 +101,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val saved = savedEvents(minLevel = WARN)
                 LoggerFactory.getLogger(randomString()).info(randomString())
                 LoggerFactory.getLogger(randomString()).warn(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe WARN
@@ -114,7 +109,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val saved = savedEvents(minLevel = ERROR)
                 LoggerFactory.getLogger(randomString()).warn(randomString())
                 LoggerFactory.getLogger(randomString()).error(randomString())
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().level shouldBe ERROR
@@ -126,7 +120,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val saved = savedEvents()
                 val id = randomString()
                 LoggerFactory.getLogger(randomString()).info("User {id} logged in", id)
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 with(saved.first()) {
@@ -139,7 +132,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val id = randomString()
                 val name = randomString()
                 LoggerFactory.getLogger(randomString()).info("User {id} is called {name}", id, name)
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 with(saved.first()) {
@@ -147,6 +139,7 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                     items shouldContainExactly mapOf("id" to id, "name" to name)
                 }
             }
+            // TODO: Fix this test (why did it break?)
             it("with three items") {
                 val saved = savedEvents()
                 val id = randomString()
@@ -158,7 +151,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                     name,
                     age,
                 )
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 with(saved.first()) {
@@ -173,7 +165,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val saved = savedEvents()
                 val id = randomString()
                 LoggerFactory.getLogger(randomString()).info("User {} logged in", id)
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 with(saved.first()) {
@@ -185,7 +176,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val saved = savedEvents()
                 val id = randomString()
                 LoggerFactory.getLogger(randomString()).info("User {} logged in", id)
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().items shouldHaveSize 0
@@ -193,7 +183,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
             it("ignores SLF4J placeholders without provided values") {
                 val saved = savedEvents()
                 LoggerFactory.getLogger(randomString()).debug("User {} logged out")
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 saved.first().message shouldBe "User {} logged out"
@@ -203,7 +192,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val id = randomString()
                 val name = randomString()
                 LoggerFactory.getLogger(randomString()).warn("User [{}] {name}", id, name)
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 with(saved.first()) {
@@ -218,7 +206,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 val id = randomString()
                 val name = randomString()
                 LoggerFactory.getLogger(randomString()).warn("User {name} [{}]", name, id)
-                waitForDispatch()
 
                 saved shouldHaveSize 1
                 with(saved.first()) {
@@ -236,7 +223,6 @@ class NoCoLoggerWrapperTest : DescribeSpec({
                 randomString(),
                 java.lang.RuntimeException(randomString()),
             )
-            waitForDispatch()
 
             saved shouldHaveSize 1
             saved.first().stackTrace shouldNotBe null
@@ -248,9 +234,28 @@ class NoCoLoggerWrapperTest : DescribeSpec({
             MDC.putCloseable("runId", runId).use {
                 LoggerFactory.getLogger(randomString()).info(randomString())
             }
-            waitForDispatch()
 
             saved shouldHaveSize 1
+            saved.first().items shouldContainExactly mapOf("runId" to runId)
+        }
+
+        it("includes MDC items in events from Klogger instances") {
+            val saved = savedEvents()
+            val runId = randomString()
+            MDC.putCloseable("runId", runId).use {
+                logger<NoCoLoggerWrapperTest>().info(randomString())
+            }
+
+            saved.first().items shouldContainExactly mapOf("runId" to runId)
+        }
+
+        it("includes MDC items in events from non-SLF4J NoCoLogger instances") {
+            val saved = savedEvents()
+            val runId = randomString()
+            MDC.putCloseable("runId", runId).use {
+                noCoLogger<NoCoLoggerWrapperTest>().info(randomString())
+            }
+
             saved.first().items shouldContainExactly mapOf("runId" to runId)
         }
 

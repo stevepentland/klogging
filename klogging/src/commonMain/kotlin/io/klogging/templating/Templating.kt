@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,10 +40,13 @@ public fun templateItems(template: String, vararg values: Any?): EventItems {
 private enum class TextOrHole { TEXT, HOLE }
 
 /**
- * Extract the list of holes from a template.
+ * Extract the list of holes enclosed in braces from a template.
  *
- * For example, from the template `User {id} signed in at {time} ` it extracts
+ * For example, from the template "User {id} signed in at {time}" it extracts
  * a list containing the strings "id" and "time".
+ *
+ * Braces are escaped by doubling them, for example, "Evaluating {{id}}" contains
+ * no holes.
  */
 internal fun extractItemNames(template: String): List<String> {
     val itemNames = mutableListOf<String>()
@@ -54,7 +57,12 @@ internal fun extractItemNames(template: String): List<String> {
             '{' -> if (state == TextOrHole.TEXT) {
                 holeStart = i
                 state = TextOrHole.HOLE
+            } else {
+                if (holeStart == i - 1) {
+                    state = TextOrHole.TEXT
+                }
             }
+
             '}' -> if (state == TextOrHole.HOLE) {
                 if (i - holeStart > 1) itemNames.add(template.substring(holeStart + 1, i))
                 state = TextOrHole.TEXT

@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@
 
 package io.klogging.internal
 
+import io.klogging.AtomicMutableList
 import io.klogging.AtomicMutableMap
 import io.klogging.Level
 import io.klogging.config.KloggingConfiguration
@@ -26,6 +27,7 @@ import io.klogging.config.SinkConfiguration
 import io.klogging.config.configLoadedFromFile
 import io.klogging.config.updateFromEnvironment
 import io.klogging.context.ContextItemExtractor
+import io.klogging.context.ItemExtractor
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -48,35 +50,50 @@ internal object KloggingEngine {
     /** Lazily loaded property that is only set when we have a Klogging state. */
     internal val configuration: KloggingConfiguration by lazy {
         debug("KloggingEngine", "Lazy-loading current configuration")
-        configLoadedFromFile?.let { setConfig(it) }
+        configLoadedFromFile?.let { config ->
+            setConfig(config)
+            info("Configuration", "Configuration read from file")
+        }
         currentConfig
     }
 
     /**
      * Map of functions that extract event items from other coroutine context elements.
      */
-    internal val otherContextExtractors =
-        mutableMapOf<CoroutineContext.Key<*>, ContextItemExtractor>()
+    @Suppress("TYPE_ALIAS")
+    internal val otherContextExtractors: AtomicMutableMap<CoroutineContext.Key<*>, ContextItemExtractor> =
+        AtomicMutableMap()
+
+    internal val otherItemExtractors: AtomicMutableList<ItemExtractor> = AtomicMutableList()
 
     /**
      * Map of context items to include in all log events.
      */
     internal val baseContextItems: MutableMap<String, Any?> = mutableMapOf()
 
-    /** Set a new configuration, replacing the existing one.  */
+    /**
+     * Set a new configuration, replacing the existing one.
+     * @param config new configuration
+     */
     internal fun setConfig(config: KloggingConfiguration) {
         val updatedConfig = config.updateFromEnvironment()
         currentState[CURRENT_STATE] = updatedConfig
         setSinks(updatedConfig.sinks)
     }
 
-    /** Append a new configuration to the existing one. */
+    /**
+     * Append a new configuration to the existing one.
+     * @param config configuration to append
+     */
     internal fun appendConfig(config: KloggingConfiguration) {
         currentConfig.append(config.updateFromEnvironment())
         setSinks(currentConfig.sinks)
     }
 
-    /** Return the current configuration, ensuring it is never null. */
+    /**
+     * Return the current configuration, ensuring it is never null.
+     */
+    @Suppress("CUSTOM_GETTERS_SETTERS")
     private val currentConfig: KloggingConfiguration
         get() = currentState[CURRENT_STATE] ?: DEFAULT_CONFIG
 
@@ -95,16 +112,40 @@ internal object KloggingEngine {
         Dispatcher.clearCache()
     }
 
-    // Functions returning the current state.
+    /**
+     * Return the minimum [Level] of a logger from the current configuration.
+     * @param loggerName name of the logger
+     * @return minimum level
+     */
     internal fun minimumLevelOf(loggerName: String): Level = currentConfig.minimumLevelOf(loggerName)
 
+    /**
+     * Return the current [Sink]s.
+     * @return map of sinks keyed by name
+     */
     internal fun sinks(): Map<String, Sink> = currentSinks
 
+    /**
+     * Return the current [SinkConfiguration]s.
+     * @return map of configurations key by name
+     */
     internal fun sinkConfigs(): Map<String, SinkConfiguration> = currentConfig.sinks
 
+    /**
+     * Return the current [LoggingConfig]s.
+     * @return list configurations
+     */
     internal fun configs(): List<LoggingConfig> = currentConfig.configs
 
+    /**
+     * Return the current minimum Klogging internal log [Level].
+     * @return minimum level
+     */
     internal fun kloggingMinLogLevel(): Level = currentConfig.kloggingMinLogLevel
 
+    /**
+     * Return the current minimum direct logging [Level].
+     * @return minimum direct logging level
+     */
     internal fun minDirectLogLevel(): Level = currentConfig.minDirectLogLevel
 }

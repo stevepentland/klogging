@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,142 +32,377 @@ import org.slf4j.helpers.LegacyAbstractLogger
 import org.slf4j.helpers.MessageFormatter
 
 /**
- * Implementation of [org.slf4j.Logger] that wraps an [io.klogging.NoCoLogger].
+ * Implementation of [org.slf4j.Logger] that wraps an instance of [io.klogging.NoCoLogger].
  *
  * Klogging does not handle markers.
+ *
+ * @param noCoLogger wrapper no-coroutine logger instance
  */
+@Suppress("WRONG_OVERLOADING_FUNCTION_ARGUMENTS")
 public class NoCoLoggerWrapper(
     private val noCoLogger: NoCoLogger,
 ) : LegacyAbstractLogger() {
+    private val callerName = NoCoLoggerWrapper::class.java.name
 
-    private val self = NoCoLoggerWrapper::class.java.name
+    /**
+     * Name of the logger.
+     *
+     * @return logger name
+     */
+    public override fun getName(): String = noCoLogger.name
 
-    override fun getName(): String = noCoLogger.name
+    /**
+     * Is the logger enabled at SL4J [org.slf4j.event.Level.TRACE] level?
+     *
+     * @return `true` if enabled at Klogging [TRACE] level
+     */
+    public override fun isTraceEnabled(): Boolean = noCoLogger.isTraceEnabled()
 
-    override fun isTraceEnabled(): Boolean = noCoLogger.isTraceEnabled()
-
-    override fun trace(msg: String?) {
-        emitEvent(TRACE, msg)
-    }
-
-    override fun trace(format: String?, arg: Any?) {
-        if (format != null) emitEvent(TRACE, format, arg)
-    }
-
-    override fun trace(format: String?, arg1: Any?, arg2: Any?) {
-        if (format != null) emitEvent(TRACE, format, arg1, arg2)
-    }
-
-    override fun trace(format: String?, vararg arguments: Any?) {
-        if (format != null) emitEvent(TRACE, format, *arguments)
+    /**
+     * Log an event at [org.slf4j.event.Level.TRACE] level.
+     *
+     * @param message the message
+     */
+    public override fun trace(message: String?) {
+        emitEvent(TRACE, message)
     }
 
     /**
-     * Log an event with any kind of [Throwable].
+     * Log an event from format and an argument at [org.slf4j.event.Level.TRACE] level.
      *
-     * This function processes all combination of null-ness of the two arguments.
+     * @param format the format string
+     * @param argument the argument
      */
-    private fun logWithThrowable(level: Level, msg: String?, t: Throwable?) {
-        if (msg != null) {
-            if (t != null) emitEvent(level, t, msg) else emitEvent(level, msg)
-        } else if (t != null) emitEvent(level, t)
+    public override fun trace(format: String?, argument: Any?) {
+        format?.let {
+            emitEvent(TRACE, format, argument)
+        }
     }
 
-    override fun trace(msg: String?, t: Throwable?) {
-        logWithThrowable(TRACE, msg, t)
+    /**
+     * Log an event from format and two arguments at [org.slf4j.event.Level.TRACE] level.
+     *
+     * @param format the format string
+     * @param argument1 first argument
+     * @param argument2 second argument
+     */
+    public override fun trace(
+        format: String?,
+        argument1: Any?,
+        argument2: Any?,
+    ) {
+        format?.let {
+            emitEvent(TRACE, format, argument1, argument2)
+        }
     }
 
-    override fun isDebugEnabled(): Boolean = noCoLogger.isDebugEnabled()
-
-    override fun debug(msg: String?) {
-        emitEvent(DEBUG, msg)
+    /**
+     * Log an event from format and three or more arguments at [org.slf4j.event.Level.TRACE] level.
+     *
+     * @param format the format string
+     * @param arguments list of three or more arguments
+     */
+    public override fun trace(format: String?, vararg arguments: Any?) {
+        format?.let {
+            emitEvent(TRACE, format, *arguments)
+        }
     }
 
-    override fun debug(format: String?, arg: Any?) {
-        if (format != null) emitEvent(DEBUG, format, arg)
+    /**
+     * Log an event and associated throwable object at [org.slf4j.event.Level.TRACE] level.
+     *
+     * @param message the message
+     */
+    public override fun trace(message: String?, throwable: Throwable?) {
+        logWithThrowable(TRACE, message, throwable)
     }
 
-    override fun debug(format: String?, arg1: Any?, arg2: Any?) {
-        if (format != null) emitEvent(DEBUG, format, arg1, arg2)
+    /**
+     * Log an event with any kind of throwable object.
+     *
+     * This function processes all combinations of null-ness of the two arguments.
+     *
+     * @param level Klogging [Level] at which to log
+     * @param message message to log
+     * @param throwable a throwable object associated with the log event
+     */
+    private fun logWithThrowable(
+        level: Level,
+        message: String?,
+        throwable: Throwable?,
+    ) {
+        message?.let {
+            throwable?.let {
+                emitEvent(level, throwable, message)
+            } ?: emitEvent(level, message)
+        } ?: throwable?.let {
+            emitEvent(level, throwable)
+        }
     }
 
-    override fun debug(format: String?, vararg arguments: Any?) {
-        if (format != null) emitEvent(DEBUG, format, *arguments)
+    /**
+     * Is the logger enabled at SL4J [org.slf4j.event.Level.DEBUG] level?
+     *
+     * @return `true` if enabled at Klogging [DEBUG] level
+     */
+    public override fun isDebugEnabled(): Boolean = noCoLogger.isDebugEnabled()
+
+    /**
+     * Log an event at [org.slf4j.event.Level.DEBUG] level.
+     *
+     * @param message the message
+     */
+    public override fun debug(message: String?) {
+        emitEvent(DEBUG, message)
     }
 
-    override fun debug(msg: String?, t: Throwable?) {
-        logWithThrowable(DEBUG, msg, t)
+    /**
+     * Log an event from format and an argument at [org.slf4j.event.Level.DEBUG] level.
+     *
+     * @param format the format string
+     * @param argument the argument
+     */
+    public override fun debug(format: String?, argument: Any?) {
+        format?.let { emitEvent(DEBUG, it, argument) }
     }
 
-    override fun isInfoEnabled(): Boolean = noCoLogger.isInfoEnabled()
-
-    override fun info(msg: String?) {
-        emitEvent(INFO, msg)
+    /**
+     * Log an event from format and two arguments at [org.slf4j.event.Level.DEBUG] level.
+     *
+     * @param format the format string
+     * @param argument1 first argument
+     * @param argument2 second argument
+     */
+    public override fun debug(
+        format: String?,
+        argument1: Any?,
+        argument2: Any?,
+    ) {
+        format?.let { emitEvent(DEBUG, it, argument1, argument2) }
     }
 
-    override fun info(format: String?, arg: Any?) {
-        if (format != null) emitEvent(INFO, format, arg)
+    /**
+     * Log an event from format and three or more arguments at [org.slf4j.event.Level.DEBUG] level.
+     *
+     * @param format the format string
+     * @param arguments list of three or more arguments
+     */
+    public override fun debug(format: String?, vararg arguments: Any?) {
+        format?.let { emitEvent(DEBUG, it, arguments) }
     }
 
-    override fun info(format: String?, arg1: Any?, arg2: Any?) {
-        if (format != null) emitEvent(INFO, format, arg1, arg2)
+    /**
+     * Log an event and associated throwable object at [org.slf4j.event.Level.DEBUG] level.
+     *
+     * @param message the message
+     */
+    public override fun debug(message: String?, throwable: Throwable?) {
+        logWithThrowable(DEBUG, message, throwable)
     }
 
-    override fun info(format: String?, vararg arguments: Any?) {
-        if (format != null) emitEvent(INFO, format, *arguments)
+    /**
+     * Is the logger enabled at SL4J [org.slf4j.event.Level.INFO] level?
+     *
+     * @return `true` if enabled at Klogging [INFO] level
+     */
+    public override fun isInfoEnabled(): Boolean = noCoLogger.isInfoEnabled()
+
+    /**
+     * Log an event at [org.slf4j.event.Level.INFO] level.
+     *
+     * @param message the message
+     */
+    public override fun info(message: String?) {
+        emitEvent(INFO, message)
     }
 
-    override fun info(msg: String?, t: Throwable?) {
-        logWithThrowable(INFO, msg, t)
+    /**
+     * Log an event from format and an argument at [org.slf4j.event.Level.INFO] level.
+     *
+     * @param format the format string
+     * @param argument the argument
+     */
+    public override fun info(format: String?, argument: Any?) {
+        format?.let { emitEvent(INFO, it, argument) }
     }
 
-    override fun isWarnEnabled(): Boolean = noCoLogger.isWarnEnabled()
-
-    override fun warn(msg: String?) {
-        emitEvent(WARN, msg)
+    /**
+     * Log an event from format and two arguments at [org.slf4j.event.Level.INFO] level.
+     *
+     * @param format the format string
+     * @param argument1 first argument
+     * @param argument2 second argument
+     */
+    public override fun info(
+        format: String?,
+        argument1: Any?,
+        argument2: Any?,
+    ) {
+        format?.let { emitEvent(INFO, it, argument1, argument2) }
     }
 
-    override fun warn(format: String?, arg: Any?) {
-        if (format != null) emitEvent(WARN, format, arg)
+    /**
+     * Log an event from format and three or more arguments at [org.slf4j.event.Level.INFO] level.
+     *
+     * @param format the format string
+     * @param arguments list of three or more arguments
+     */
+    public override fun info(format: String?, vararg arguments: Any?) {
+        format?.let { emitEvent(INFO, it, *arguments) }
     }
 
-    override fun warn(format: String?, vararg arguments: Any?) {
-        if (format != null) emitEvent(WARN, format, *arguments)
+    /**
+     * Log an event and associated throwable object at [org.slf4j.event.Level.INFO] level.
+     *
+     * @param message the message
+     */
+    public override fun info(message: String?, throwable: Throwable?) {
+        logWithThrowable(INFO, message, throwable)
     }
 
-    override fun warn(format: String?, arg1: Any?, arg2: Any?) {
-        if (format != null) emitEvent(WARN, format, arg1, arg2)
+    /**
+     * Is the logger enabled at SL4J [org.slf4j.event.Level.WARN] level?
+     *
+     * @return `true` if enabled at Klogging [WARN] level
+     */
+    public override fun isWarnEnabled(): Boolean = noCoLogger.isWarnEnabled()
+
+    /**
+     * Log an event at [org.slf4j.event.Level.WARN] level.
+     *
+     * @param message the message
+     */
+    public override fun warn(message: String?) {
+        emitEvent(WARN, message)
     }
 
-    override fun warn(msg: String?, t: Throwable?) {
-        logWithThrowable(WARN, msg, t)
+    /**
+     * Log an event from format and an argument at [org.slf4j.event.Level.WARN] level.
+     *
+     * @param format the format string
+     * @param argument the argument
+     */
+    public override fun warn(format: String?, argument: Any?) {
+        format?.let {
+            emitEvent(WARN, format, argument)
+        }
     }
 
-    override fun isErrorEnabled(): Boolean = noCoLogger.isErrorEnabled()
-
-    override fun error(msg: String?) {
-        emitEvent(ERROR, msg)
+    /**
+     * Log an event from format and two arguments at [org.slf4j.event.Level.WARN] level.
+     *
+     * @param format the format string
+     * @param argument1 first argument
+     * @param argument2 second argument
+     */
+    public override fun warn(
+        format: String?,
+        argument1: Any?,
+        argument2: Any?,
+    ) {
+        format?.let {
+            emitEvent(WARN, format, argument1, argument2)
+        }
     }
 
-    override fun error(format: String?, arg: Any?) {
-        if (format != null) emitEvent(ERROR, format, arg)
+    /**
+     * Log an event from format and three or more arguments at [org.slf4j.event.Level.WARN] level.
+     *
+     * @param format the format string
+     * @param arguments list of three or more arguments
+     */
+    public override fun warn(format: String?, vararg arguments: Any?) {
+        format?.let {
+            emitEvent(WARN, format, *arguments)
+        }
     }
 
-    override fun error(format: String?, arg1: Any?, arg2: Any?) {
-        if (format != null) emitEvent(ERROR, format, arg1, arg2)
+    /**
+     * Log an event and associated throwable object at [org.slf4j.event.Level.WARN] level.
+     *
+     * @param message the message
+     */
+    public override fun warn(message: String?, throwable: Throwable?) {
+        logWithThrowable(WARN, message, throwable)
     }
 
-    override fun error(format: String?, vararg arguments: Any?) {
-        if (format != null) emitEvent(ERROR, format, *arguments)
+    /**
+     * Is the logger enabled at SL4J [org.slf4j.event.Level.ERROR] level?
+     *
+     * @return `true` if enabled at Klogging [ERROR] level
+     */
+    public override fun isErrorEnabled(): Boolean = noCoLogger.isErrorEnabled()
+
+    /**
+     * Log an event at [org.slf4j.event.Level.ERROR] level.
+     *
+     * @param message the message
+     */
+    public override fun error(message: String?) {
+        emitEvent(ERROR, message)
     }
 
-    override fun error(msg: String?, t: Throwable?) {
-        logWithThrowable(ERROR, msg, t)
+    /**
+     * Log an event from format and an argument at [org.slf4j.event.Level.ERROR] level.
+     *
+     * @param format the format string
+     * @param argument the argument
+     */
+    public override fun error(format: String?, argument: Any?) {
+        format?.let { emitEvent(ERROR, it, argument) }
     }
 
-    override fun getFullyQualifiedCallerName(): String? = self
+    /**
+     * Log an event from format and two arguments at [org.slf4j.event.Level.ERROR] level.
+     *
+     * @param format the format string
+     * @param argument1 first argument
+     * @param argument2 second argument
+     */
+    public override fun error(
+        format: String?,
+        argument1: Any?,
+        argument2: Any?,
+    ) {
+        format?.let { emitEvent(ERROR, it, argument1, argument2) }
+    }
 
-    override fun handleNormalizedLoggingCall(
+    /**
+     * Log an event from format and three or more arguments at [org.slf4j.event.Level.ERROR] level.
+     *
+     * @param format the format string
+     * @param arguments list of three or more arguments
+     */
+    public override fun error(format: String?, vararg arguments: Any?) {
+        format?.let { emitEvent(ERROR, it, arguments) }
+    }
+
+    /**
+     * Log an event and associated throwable object at [org.slf4j.event.Level.ERROR] level.
+     *
+     * @param message the message
+     */
+    public override fun error(message: String?, throwable: Throwable?) {
+        logWithThrowable(ERROR, message, throwable)
+    }
+
+    /**
+     * Return the fully-qualified caller name.
+     *
+     * @return fully-qualified name of this class
+     */
+    public override fun getFullyQualifiedCallerName(): String? = callerName
+
+    /**
+     * Process the logging call after all processing.
+     *
+     * @param level SLF4J level of the log event
+     * @param marker any marker associated with the log event
+     * @param messagePattern formatted message pattern
+     * @param arguments arguments to the formatted message
+     * @param throwable throwable objects associated with the log event
+     */
+    public override fun handleNormalizedLoggingCall(
         level: org.slf4j.event.Level?,
         marker: Marker?,
         messagePattern: String?,
@@ -181,12 +416,16 @@ public class NoCoLoggerWrapper(
      * Forward an event with context items from [MDC], handling null [format] and
      * absence of [arguments].
      */
-    private fun emitEvent(level: Level, format: String?, vararg arguments: Any?) {
+    private fun emitEvent(
+        level: Level,
+        format: String?,
+        vararg arguments: Any?,
+    ) {
         val formatted = MessageFormatter.arrayFormat(format, arguments).message
         if (format == null || arguments.isEmpty()) {
-            noCoLogger.emitEvent(level, null, formatted, contextItems())
+            noCoLogger.emitEvent(level, null, formatted)
         } else {
-            noCoLogger.emitEvent(level, null, noCoLogger.e(formatted, *arguments), contextItems())
+            noCoLogger.emitEvent(level, null, noCoLogger.e(formatted, *arguments))
         }
     }
 
@@ -202,15 +441,19 @@ public class NoCoLoggerWrapper(
     ) {
         val formatted = MessageFormatter.arrayFormat(format, arguments).message
         if (format == null || arguments.isEmpty()) {
-            noCoLogger.emitEvent(level, throwable, formatted, contextItems())
+            noCoLogger.emitEvent(level, throwable, formatted)
         } else {
-            noCoLogger.emitEvent(level, null, noCoLogger.e(formatted, *arguments), contextItems())
+            noCoLogger.emitEvent(level, null, noCoLogger.e(formatted, *arguments))
         }
     }
-
-    private fun contextItems(): Map<String, Any?> = MDC.getCopyOfContextMap() ?: mapOf()
 }
 
+/**
+ * Map SLF4J severity level to the corresponding Klogging level.
+ *
+ * @param slf4jLevel SLF4J severity level
+ * @return the corresponding Klogging level
+ */
 internal fun kloggingLevel(slf4jLevel: org.slf4j.event.Level?): Level = when (slf4jLevel) {
     org.slf4j.event.Level.TRACE -> TRACE
     org.slf4j.event.Level.DEBUG -> DEBUG

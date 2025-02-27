@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,38 +18,50 @@
 
 package io.klogging.rendering
 
+import io.klogging.Level
+import io.klogging.logEvent
 import io.kotest.core.spec.style.DescribeSpec
-import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldEndWith
+import kotlinx.datetime.Instant
 
 class RenderAnsiTest : DescribeSpec({
-
-    describe("shortenName() function") {
-        it("keeps a short name as it is") {
-            shortenName("main", 20) shouldBe "main"
+    describe("`renderAnsi()` function") {
+        val event = logEvent(
+            timestamp = Instant.parse("2024-11-03T00:08:42.123456Z"),
+            level = Level.DEBUG,
+            context = "DefaultDispatcher-worker-5",
+            logger = "com.example.Thing",
+            message = "Test"
+        )
+        // Use `shouldEndWith` to avoid issues with different timezones.
+        it("renders standard widths") {
+            renderAnsi(contextWidth = 20, loggerWidth = 20)(event) shouldEndWith
+                    "DEBUG [          D-worker-5] :    com.example.Thing : Test"
         }
-        it("shortens dotted parts of class names") {
-            shortenName("io.klogging.events.LogEvent", 20) shouldBe "i.k.events.LogEvent"
+        it("renders adjusted widths") {
+            renderAnsi(contextWidth = 10, loggerWidth = 30)(event) shouldEndWith
+                    "DEBUG [D-worker-5] :              com.example.Thing : Test"
         }
-        it("shortens complex thread names") {
-            shortenName("DefaultDispatcher-worker-3+Playpen") shouldBe "D-worker-3+Playpen"
+        it("omits context if contextWidth is zero") {
+            renderAnsi(contextWidth = 0, loggerWidth = 20)(event) shouldEndWith
+                    "DEBUG :    com.example.Thing : Test"
         }
-        it("ignores consecutive delimiters") {
-            shortenName("OkHttp http://localhost:4317/...") shouldBe "O h://l:4317/..."
+        it("omits logger name if loggerWidth is zero") {
+            renderAnsi(contextWidth = 10, loggerWidth = 0)(event) shouldEndWith
+                    "DEBUG [D-worker-5] : Test"
         }
-        it("truncates a single string without delimiters") {
-            shortenName("Triantiwontigongalope") shouldBe "Triantiwontigongalop"
+        it("includes any context items") {
+            renderAnsi(0, 0)(event.copy(items = mapOf("this" to "that"))) shouldEndWith
+                    "DEBUG : Test : {this=that}"
         }
-    }
-
-    describe("right20 extension property") {
-        it("right-aligns a short name") {
-            "main".right20 shouldBe "                main"
-        }
-        it("right-aligns a longer name") {
-            "io.klogging.Klogging".right20 shouldBe "io.klogging.Klogging"
-        }
-        it("shortens package names in a too-long name") {
-            "io.klogging.events.LogEvent".right20 shouldBe " i.k.events.LogEvent"
+        it("includes any stacktrace") {
+            renderAnsi(0, 0)(
+                event.copy(
+                    stackTrace = "io.klogging.PretendException: message\n    at io.klogging.test.BlahTest.blah"
+                )
+            ) shouldEndWith
+                    "DEBUG : Test\nio.klogging.PretendException: message\n" +
+                    "    at io.klogging.test.BlahTest.blah"
         }
     }
 })

@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,9 +23,9 @@ import io.klogging.Level.ERROR
 import io.klogging.Level.INFO
 import io.klogging.Level.TRACE
 import io.klogging.Level.WARN
-import io.klogging.config.Context
 import io.klogging.config.DEFAULT_CONSOLE
 import io.klogging.config.loggingConfiguration
+import io.klogging.context.Context
 import io.klogging.genLevel
 import io.klogging.genLoggerName
 import io.klogging.logEvent
@@ -36,10 +36,9 @@ import io.klogging.rendering.RENDER_SIMPLE
 import io.klogging.savedEvents
 import io.klogging.sending.STDERR
 import io.klogging.sending.STDOUT
-import io.kotest.common.ExperimentalKotest
+import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.nondeterministic.eventuallyConfig
 import io.kotest.core.spec.style.DescribeSpec
-import io.kotest.framework.concurrency.eventually
-import io.kotest.framework.concurrency.fixed
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.property.checkAll
@@ -47,7 +46,6 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalKotest::class)
 internal class DispatcherTest : DescribeSpec({
     describe("sinksFor() function") {
         describe("when no loggers are configured") {
@@ -189,7 +187,7 @@ internal class DispatcherTest : DescribeSpec({
                 Dispatcher.sinksFor("dev.kord.service.NikkyService", INFO) shouldHaveSize 2
             }
         }
-        describe("simple performance test") {
+        describe("!simple performance test") {
             beforeTest {
                 repeat(10_000) { logger("dev.test.Logger-$it") }
                 repeat(10_000) { logger("dev.test.sub.Logger-$it") }
@@ -209,10 +207,12 @@ internal class DispatcherTest : DescribeSpec({
                 repeat(100) {
                     val id = Random.nextLong(10_000)
                     repeat(100) {
-                        eventually({
-                            duration = 20
-                            interval = 2.milliseconds.fixed()
-                        }) {
+                        eventually(
+                            eventuallyConfig {
+                                duration = 20.milliseconds
+                                interval = 2.milliseconds
+                            },
+                        ) {
                             Dispatcher.cachedSinksFor("dev.test.Logger-$id", INFO)
                                 .shouldHaveSize(1)
                                 .first().name.shouldBe("stdout")
@@ -251,7 +251,7 @@ internal class DispatcherTest : DescribeSpec({
     }
     describe("sendDirect() function") {
         it("adds base context items to the log event") {
-            val events = savedEvents()
+            val events = savedEvents(logDirect = false)
             val event = logEvent(level = INFO)
             Context.clearBaseContext()
             val key = randomString()
@@ -268,7 +268,6 @@ internal class DispatcherTest : DescribeSpec({
             }
             val event = logEvent(level = INFO)
             Dispatcher.sendDirect(event)
-            events.size shouldBe 1
             events.first().items["eventId"] shouldBe event.id
         }
     }

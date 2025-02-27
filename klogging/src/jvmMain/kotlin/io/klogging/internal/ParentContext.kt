@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +21,11 @@ package io.klogging.internal
 import io.klogging.config.ENV_KLOGGING_COROUTINE_THREADS
 import io.klogging.config.ENV_KLOGGING_FF_EXECUTOR_THREAD_POOL
 import io.klogging.config.ENV_KLOGGING_FF_GLOBAL_SCOPE
+import io.klogging.config.ENV_KLOGGING_DISPATCHERS_IO
 import io.klogging.config.getenvBoolean
 import io.klogging.config.getenvInt
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -59,20 +61,22 @@ internal val threadCount = AtomicInteger(0)
  * - Otherwise, use the default coroutine dispatcher.
  */
 @OptIn(DelicateCoroutinesApi::class)
-internal actual fun parentContext(): CoroutineContext {
+internal actual fun parentContext(): CoroutineContext =
     if (getenvBoolean(ENV_KLOGGING_FF_EXECUTOR_THREAD_POOL, false)) {
         debug(
             "Coroutines",
             "Creating parent context for Klogging with pool of $kloggingThreadPoolSize threads",
         )
-        return Executors.newFixedThreadPool(kloggingThreadPoolSize) { r ->
+        Executors.newFixedThreadPool(kloggingThreadPoolSize) { r ->
             Thread(r, "klogging-${threadCount.incrementAndGet()}")
         }.asCoroutineDispatcher()
     } else if (getenvBoolean(ENV_KLOGGING_FF_GLOBAL_SCOPE, false)) {
         debug("Coroutines", "Creating parent context for Klogging using GlobalScope")
-        return GlobalScope.coroutineContext
+        GlobalScope.coroutineContext
+    } else if (getenvBoolean(ENV_KLOGGING_DISPATCHERS_IO, false)) {
+        debug("Coroutines", "Creating parent context for Klogging using Dispatchers.IO")
+        Dispatchers.IO
     } else {
         debug("Coroutines", "Creating parent context for Klogging with default dispatcher")
-        return Job()
+        Job()
     }
-}

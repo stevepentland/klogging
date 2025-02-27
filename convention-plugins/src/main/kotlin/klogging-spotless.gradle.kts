@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,13 +21,13 @@ plugins {
 }
 
 val licenceText = """
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -62,6 +62,8 @@ spotless {
 
     kotlinGradle {
         target("**/*.gradle.kts")
+
+//        diktat()
         ktlint(ktlintVersion)
 
         licenseHeader(
@@ -76,6 +78,7 @@ spotless {
 
     kotlin {
         target("src/**/*.kt")
+
         ktlint(ktlintVersion)
 
         licenseHeader(kotlinLicenceHeader)
@@ -83,6 +86,14 @@ spotless {
         trimTrailingWhitespace()
         indentWithSpaces()
         endWithNewline()
+    }
+
+    // Only apply Diktat rules to production code.
+    kotlin {
+        target("src/main/**/*.kt")
+        // Diktat tries to change overridden SLF4J method `getMDCAdapter()`
+        targetExclude("**/KloggingServiceProvider.kt")
+        diktat()
     }
 
     java {

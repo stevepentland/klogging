@@ -1,12 +1,12 @@
 /*
 
-   Copyright 2021-2023 Michael Strasser.
+   Copyright 2021-2025 Michael Strasser.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@
 package io.klogging.sending
 
 /** Send an event rendered as a string to the standard output stream. */
-public val STDOUT: SendString = { s -> println(s) }
+public val STDOUT: SendString = SendString { eventString -> println(eventString) }
 
 /** Send an event rendered as a string to the standard error stream. */
 public expect val STDERR: SendString
